@@ -49,55 +49,11 @@ func puzzle3() (int, error) {
 			return 0, errors.New("line too long to parse")
 		}
 
-		gameStr := strings.Split(string(line), ":")
-		if len(gameStr) != 2 {
-			return 0, errors.New("game line formatted incorrectly")
-		}
-
-		gameIdStr := strings.Split(gameStr[0], " ")
-		if len(gameIdStr) != 2 {
-			return 0, errors.New("game line formatted incorrectly")
-		}
-
-		gameId, err := strconv.Atoi(gameIdStr[1])
+		cubeGame, err := parseCubeGame(line)
 		if err != nil {
-			return 0, errors.New("game line formatted incorrectly")
-		}
-
-		cubeGame := CubeGame{
-			id: gameId,
-			cubeSets: []CubeSet{},
+			return 0, err
 		}
 		
-		for _, cubeSetStr := range strings.Split(gameStr[1], ";") {
-			cubeSet := CubeSet{}
-
-			for _, cubeCountStr := range strings.Split(cubeSetStr, ",") {
-				cubeCountValStr := strings.Split(cubeCountStr, " ")
-
-				// Ignore empty or badly formatted tokens
-				if len(cubeCountValStr) != 3 { // white space + count + color
-					continue
-				}
-
-				val, err := strconv.Atoi(cubeCountValStr[1])
-				if err != nil {
-					continue
-				}
-
-				switch color := cubeCountValStr[2]; color {
-				case "red":
-					cubeSet.red = val
-				case "green":
-					cubeSet.green = val
-				case "blue":
-					cubeSet.blue = val
-				}
-			}
-
-			cubeGame.cubeSets = append(cubeGame.cubeSets, cubeSet)
-		}
-
 		games = append(games, cubeGame)
 	}
 
@@ -114,4 +70,57 @@ func puzzle3() (int, error) {
 	}
 
 	return gameIdTotal, nil
+}
+
+func parseCubeGame(line []byte) (CubeGame, error) {
+	gameStr := strings.Split(string(line), ":")
+	if len(gameStr) != 2 {
+		return CubeGame{}, errors.New("game line formatted incorrectly")
+	}
+
+	gameIdStr := strings.Split(gameStr[0], " ")
+	if len(gameIdStr) != 2 {
+		return CubeGame{}, errors.New("game line formatted incorrectly")
+	}
+
+	gameId, err := strconv.Atoi(gameIdStr[1])
+	if err != nil {
+		return CubeGame{}, errors.New("game line formatted incorrectly")
+	}
+
+	cubeGame := CubeGame{
+		id: gameId,
+		cubeSets: []CubeSet{},
+	}
+	
+	for _, cubeSetStr := range strings.Split(gameStr[1], ";") {
+		cubeSet := CubeSet{}
+
+		for _, cubeCountStr := range strings.Split(cubeSetStr, ",") {
+			cubeCountValStr := strings.Split(cubeCountStr, " ")
+
+			// Ignore empty or badly formatted tokens
+			if len(cubeCountValStr) != 3 { // white space + count + color
+				continue
+			}
+
+			val, err := strconv.Atoi(cubeCountValStr[1])
+			if err != nil {
+				continue
+			}
+
+			switch color := cubeCountValStr[2]; color {
+			case "red":
+				cubeSet.red = val
+			case "green":
+				cubeSet.green = val
+			case "blue":
+				cubeSet.blue = val
+			}
+		}
+
+		cubeGame.cubeSets = append(cubeGame.cubeSets, cubeSet)
+	}
+
+	return cubeGame, nil
 }
