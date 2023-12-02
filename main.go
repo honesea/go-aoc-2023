@@ -9,6 +9,7 @@ import (
 var puzzles = map[int]func()(int, error){
 	1: puzzle1,
 	2: puzzle2,
+	3: puzzle3,
 }
 
 func main() {
