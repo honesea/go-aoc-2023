@@ -24,8 +24,22 @@ const maxRedCubes = 12
 const maxGreenCubes = 13
 const maxBlueCubes = 14
 
-func puzzle3() (int, error) {
-	file, err := os.Open("inputs/puzzle3.txt")
+func day2() (int, int, error) {
+	answerP1, err := d2p1()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	answerP2, err := d2p2()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return answerP1, answerP2, err
+}
+
+func d2p1() (int, error) {
+	file, err := os.Open("inputs/d2p1.txt")
 	if err != nil {
 		return 0, errors.New("could not read file input")
 	}
@@ -70,6 +84,58 @@ func puzzle3() (int, error) {
 	}
 
 	return gameIdTotal, nil
+}
+
+func d2p2() (int, error) {
+	file, err := os.Open("inputs/d2p2.txt")
+	if err != nil {
+		return 0, errors.New("could not read file input")
+	}
+
+	defer file.Close()
+	reader := bufio.NewReader(file)
+
+	games := []CubeGame{}
+
+	for {
+		line, isPrefix, err := reader.ReadLine()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}	
+
+			return 0, errors.New("there was an issue reading the file")
+		}
+
+		if isPrefix {
+			return 0, errors.New("line too long to parse")
+		}
+
+		cubeGame, err := parseCubeGame(line)
+		if err != nil {
+			return 0, err
+		}
+		
+		games = append(games, cubeGame)
+	}
+
+	gamePowersTotal := 0
+	for _, game := range games {
+		minRedCubes := 0
+		minGreenCubes := 0
+		minBlueCubes := 0
+
+		for _, set := range game.cubeSets {
+			minRedCubes = max(minRedCubes, set.red)
+			minGreenCubes = max(minGreenCubes, set.green)
+			minBlueCubes = max(minBlueCubes, set.blue)
+		}
+
+		gamePower := minRedCubes * minGreenCubes * minBlueCubes
+		gamePowersTotal += gamePower
+	}
+
+	return gamePowersTotal, nil
 }
 
 func parseCubeGame(line []byte) (CubeGame, error) {

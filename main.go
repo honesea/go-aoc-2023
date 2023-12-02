@@ -6,11 +6,9 @@ import (
 	"strconv"
 )
 
-var puzzles = map[int]func()(int, error){
-	1: puzzle1,
-	2: puzzle2,
-	3: puzzle3,
-	4: puzzle4,
+var puzzles = map[int]func()(int, int, error){
+	1: day1,
+	2: day2,
 }
 
 func main() {
@@ -27,16 +25,16 @@ func main() {
 		return
 	}
 
-	puzzle, ok := puzzles[puzzleArg]
+	day, ok := puzzles[puzzleArg]
 	if !ok {
 		fmt.Println("Error: please enter a valid puzzle number as an arg")
 		return
 	}
 
-	answer, err := puzzle()
+	answerP1, answerP2, err := day()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	} else {
-		fmt.Printf("Answer: %v\n", answer)
+		fmt.Printf("Answer p1: %v\nAnswer p2: %v\n", answerP1, answerP2)
 	}
 }
