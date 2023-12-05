@@ -11,15 +11,15 @@ import (
 )
 
 var stringToNumber = map[string]string{
-	"one": "1",
-	"two": "2",
+	"one":   "1",
+	"two":   "2",
 	"three": "3",
-	"four": "4",
-	"five": "5",
-	"six": "6",
+	"four":  "4",
+	"five":  "5",
+	"six":   "6",
 	"seven": "7",
 	"eight": "8",
-	"nine": "9",
+	"nine":  "9",
 }
 
 func day1() (int, int, error) {
@@ -52,7 +52,7 @@ func d1p1() (int, error) {
 		if err != nil {
 			if err == io.EOF {
 				break
-			}	
+			}
 
 			return 0, errors.New("there was an issue reading the file")
 		}
@@ -73,7 +73,7 @@ func d1p1() (int, error) {
 
 		if len(digits) > 0 {
 			first := digits[0]
-			last := digits[len(digits) - 1]
+			last := digits[len(digits)-1]
 
 			number := first + last
 			calValue, err := strconv.Atoi(number)
@@ -84,12 +84,7 @@ func d1p1() (int, error) {
 		}
 	}
 
-	calibration := 0
-	for _, calValue := range calValues {
-		calibration += calValue
-	}
-
-	return calibration, nil
+	return sum(calValues), nil
 }
 
 func d1p2() (int, error) {
@@ -108,7 +103,7 @@ func d1p2() (int, error) {
 		if err != nil {
 			if err == io.EOF {
 				break
-			}	
+			}
 
 			return 0, errors.New("there was an issue reading the file")
 		}
@@ -139,7 +134,7 @@ func d1p2() (int, error) {
 
 		if len(digits) > 0 {
 			first := digits[0]
-			last := digits[len(digits) - 1]
+			last := digits[len(digits)-1]
 
 			number := first + last
 			calValue, err := strconv.Atoi(number)
@@ -150,10 +145,5 @@ func d1p2() (int, error) {
 		}
 	}
 
-	calibration := 0
-	for _, calValue := range calValues {
-		calibration += calValue
-	}
-
-	return calibration, nil
+	return sum(calValues), nil
 }

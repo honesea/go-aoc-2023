@@ -6,9 +6,10 @@ import (
 	"strconv"
 )
 
-var puzzles = map[int]func()(int, int, error){
+var puzzles = map[int]func() (int, int, error){
 	1: day1,
 	2: day2,
+	3: day3,
 }
 
 func main() {
