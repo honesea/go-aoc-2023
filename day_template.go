@@ -45,7 +45,7 @@ package main
 // 			return 0, errors.New("line too long to parse")
 // 		}
 
-// 		fmt.Println(line)
+// 		fmt.Println(string(line))
 // 	}
 
 // 	return 0, nil
@@ -74,7 +74,7 @@ package main
 // 			return 0, errors.New("line too long to parse")
 // 		}
 
-// 		fmt.Println(line)
+// 		fmt.Println(string(line))
 // 	}
 
 // 	return 0, nil
