@@ -1,5 +1,10 @@
 package main
 
+type Coord struct {
+	x int
+	y int
+}
+
 func sum(values []int) int {
 	sum := 0
 	for _, value := range values {
