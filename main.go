@@ -18,6 +18,7 @@ var puzzles = map[int]func() (int, int, error){
 	9:  day9,
 	10: day10,
 	11: day11,
+	12: day12,
 }
 
 func main() {
