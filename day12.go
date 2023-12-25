@@ -15,6 +15,12 @@ type SpringLine struct {
 	groupings []int
 }
 
+type CachedSpringLine struct {
+	groupings      []int
+	dmgSpringCount int
+	currentIndex   int
+}
+
 func day12() (int, int, error) {
 	answerP1, err := d12p1()
 	if err != nil {
@@ -58,9 +64,10 @@ func d12p1() (int, error) {
 	}
 
 	permutations := []int{}
-	// for _, springLine := range springLines {
-	// 	permutations = append(permutations, calculateSpringPermutations(springLine))
-	// }
+	for _, springLine := range springLines {
+		cache := make(map[string]CachedSpringLine)
+		permutations = append(permutations, countPermutations(cache, springLine, ""))
+	}
 
 	return sum(permutations), nil
 }
@@ -94,9 +101,10 @@ func d12p2() (int, error) {
 	}
 
 	permutations := []int{}
-	for _, springLine := range springLines {
-		// fmt.Println(springLine)
-		permutations = append(permutations, calculateSpringPermutationsFast(springLine))
+	for i, springLine := range springLines {
+		fmt.Printf("%v / %v\n", i, len(springLines))
+		cache := make(map[string]CachedSpringLine)
+		permutations = append(permutations, countPermutations(cache, springLine, ""))
 	}
 
 	return sum(permutations), nil
@@ -164,87 +172,56 @@ func parseSpringLineLong(line []byte) SpringLine {
 	}
 }
 
-func calculateSpringPermutations(springLine SpringLine) int {
-	unknownSprings := []int{}
-	for i, spring := range springLine.springs {
-		if spring == "?" {
-			unknownSprings = append(unknownSprings, i)
+func countPermutations(cache map[string]CachedSpringLine, springLine SpringLine, perm string) int {
+	cachedSpringLine := getSpringLineFromCache(cache, perm)
+
+	fmt.Println(perm)
+
+	// Handle most recent addition to permutation
+	if perm != "" {
+		if perm[len(perm)-1] == '#' {
+			cachedSpringLine.dmgSpringCount++
+		} else if perm[len(perm)-1] == '.' && cachedSpringLine.dmgSpringCount > 0 {
+			cachedSpringLine.groupings = append(cachedSpringLine.groupings, cachedSpringLine.dmgSpringCount)
+			cachedSpringLine.dmgSpringCount = 0
 		}
+
+		cachedSpringLine.currentIndex++
 	}
 
-	// Creating starting permutation
-	perm := make([]string, len(unknownSprings))
-	for i := 0; i < len(unknownSprings); i++ {
-		perm[i] = "?"
-	}
+	for {
 
-	return countPermutations(perm, unknownSprings, springLine)
-}
-
-func calculateSpringPermutationsFast(springLine SpringLine) int {
-	unknownSprings := []int{}
-	for i, spring := range springLine.springs {
-		if spring == "?" {
-			unknownSprings = append(unknownSprings, i)
+		// End of string so calculate if correct and return count
+		if cachedSpringLine.currentIndex == len(springLine.springs) {
+			break
 		}
-	}
 
-	// Creating starting permutation
-	perm := make([]string, len(unknownSprings))
-	for i := 0; i < len(unknownSprings); i++ {
-		perm[i] = "?"
-	}
+		character := springLine.springs[cachedSpringLine.currentIndex]
 
-	return countPermutationsFast(perm, unknownSprings, springLine)
-}
-
-func countPermutations(perm []string, unknownSprings []int, springLine SpringLine) int {
-	for i := 0; i < len(perm); i++ {
-		if perm[i] == "?" {
-			opPerm := make([]string, len(perm))
-			dmgPerm := make([]string, len(perm))
-
-			copy(opPerm, perm)
-			copy(dmgPerm, perm)
-
-			opPerm[i] = "."
-			dmgPerm[i] = "#"
-
-			opPermCount := countPermutations(opPerm, unknownSprings, springLine)
-			dmgPermCount := countPermutations(dmgPerm, unknownSprings, springLine)
-
-			return opPermCount + dmgPermCount
+		if character == "?" {
+			cache[perm] = cachedSpringLine
+			return countPermutations(cache, springLine, perm+"#") + countPermutations(cache, springLine, perm+".")
+		} else if character == "#" {
+			cachedSpringLine.dmgSpringCount++
+		} else if character == "." && cachedSpringLine.dmgSpringCount > 0 {
+			cachedSpringLine.groupings = append(cachedSpringLine.groupings, cachedSpringLine.dmgSpringCount)
+			cachedSpringLine.dmgSpringCount = 0
 		}
+
+		cachedSpringLine.currentIndex++
 	}
 
-	// validate permutation matches grouping
-	filledSprings := make([]string, len(springLine.springs))
-	copy(filledSprings, springLine.springs)
-	springsfilled := 0
-	for i := range filledSprings {
-		if filledSprings[i] == "?" {
-			filledSprings[i] = perm[springsfilled]
-			springsfilled++
-		}
+	if cachedSpringLine.dmgSpringCount > 0 {
+		cachedSpringLine.groupings = append(cachedSpringLine.groupings, cachedSpringLine.dmgSpringCount)
+		cachedSpringLine.dmgSpringCount = 0
 	}
 
-	springGroups := []int{}
-	groupedSpringCount := 0
-	for i := range filledSprings {
-		if filledSprings[i] == "#" {
-			groupedSpringCount++
-		} else if groupedSpringCount > 0 {
-			springGroups = append(springGroups, groupedSpringCount)
-			groupedSpringCount = 0
-		}
+	if len(springLine.groupings) != len(cachedSpringLine.groupings) {
+		return 0
 	}
 
-	if groupedSpringCount > 0 {
-		springGroups = append(springGroups, groupedSpringCount)
-	}
-
-	for i := range springLine.groupings {
-		if len(springLine.groupings) != len(springGroups) || springLine.groupings[i] != springGroups[i] {
+	for i := 0; i < len(springLine.groupings); i++ {
+		if springLine.groupings[i] != cachedSpringLine.groupings[i] {
 			return 0
 		}
 	}
@@ -252,134 +229,17 @@ func countPermutations(perm []string, unknownSprings []int, springLine SpringLin
 	return 1
 }
 
-func countPermutationsFast(perm []string, unknownSprings []int, springLine SpringLine) int {
-	// fmt.Println(perm)
-	for i := 0; i < len(perm); i++ {
-		if perm[i] == "?" {
-			opPerm := make([]string, len(perm))
-			dmgPerm := make([]string, len(perm))
-
-			copy(opPerm, perm)
-			copy(dmgPerm, perm)
-
-			opPerm[i] = "."
-			dmgPerm[i] = "#"
-
-			// fmt.Println(opPerm)
-			opValid := checkPermValid(opPerm[:i+1], springLine)
-			dmgValid := checkPermValid(dmgPerm[:i+1], springLine)
-
-			// if i > 5 {
-			// 	return 0
-			// }
-
-			totalPermCount := 0
-			if opValid {
-				totalPermCount += countPermutationsFast(opPerm, unknownSprings, springLine)
-			}
-			if dmgValid {
-				totalPermCount += countPermutationsFast(dmgPerm, unknownSprings, springLine)
-			}
-
-			return totalPermCount
-
-			// Check if opPerm and dmgPerm are valid
-
-			// opPermCount := countPermutations(opPerm, unknownSprings, springLine)
-			// dmgPermCount := countPermutations(dmgPerm, unknownSprings, springLine)
-
-			// return opPermCount + dmgPermCount
-		}
+func getSpringLineFromCache(cache map[string]CachedSpringLine, perm string) CachedSpringLine {
+	if len(perm) == 0 {
+		return CachedSpringLine{}
 	}
 
-	// fmt.Println(perm)
+	cachedPerm := perm[:len(perm)-1]
 
-	fmt.Println(perm)
-
-	if checkPermValid(perm, springLine) {
-		return 1
+	groups, ok := cache[cachedPerm]
+	if ok {
+		return groups
 	}
 
-	return 0
-
-	// validate permutation matches grouping
-	// filledSprings := make([]string, len(springLine.springs))
-	// copy(filledSprings, springLine.springs)
-	// springsfilled := 0
-	// for i := range filledSprings {
-	// 	if filledSprings[i] == "?" {
-	// 		filledSprings[i] = perm[springsfilled]
-	// 		springsfilled++
-	// 	}
-	// }
-
-	// springGroups := []int{}
-	// groupedSpringCount := 0
-	// for i := range filledSprings {
-	// 	if filledSprings[i] == "#" {
-	// 		groupedSpringCount++
-	// 	} else if groupedSpringCount > 0 {
-	// 		springGroups = append(springGroups, groupedSpringCount)
-	// 		groupedSpringCount = 0
-	// 	}
-	// }
-
-	// if groupedSpringCount > 0 {
-	// 	springGroups = append(springGroups, groupedSpringCount)
-	// }
-
-	// for i := range springLine.groupings {
-	// 	if len(springLine.groupings) != len(springGroups) || springLine.groupings[i] != springGroups[i] {
-	// 		return 0
-	// 	}
-	// }
-
-	// return 1
-}
-
-// permSubArray is the array of all springs that have been set in the permutation
-func checkPermValid(permSubArray []string, springLine SpringLine) bool {
-	// fmt.Println(permSubArray)
-
-	filledSprings := make([]string, len(springLine.springs))
-	copy(filledSprings, springLine.springs)
-
-	currentCharIdx := 0
-	for i := range filledSprings {
-		if currentCharIdx == len(permSubArray) {
-			break
-		}
-
-		if filledSprings[i] == "?" {
-			filledSprings[i] = permSubArray[currentCharIdx]
-			currentCharIdx++
-		}
-	}
-
-	// fmt.Println(springLine.springs)
-	// fmt.Println(filledSprings)
-
-	currentSpringGroup := 0
-	groupedSprings := 0
-	for i := range filledSprings {
-		if filledSprings[i] == "?" {
-			break
-		}
-
-		if filledSprings[i] == "#" {
-			groupedSprings++
-		}
-
-		if filledSprings[i] == "." && groupedSprings > 0 {
-			currentSpringGroup++
-			groupedSprings = 0
-		}
-
-		if currentSpringGroup >= len(springLine.groupings) || groupedSprings > springLine.groupings[currentSpringGroup] {
-			// fmt.Println("invalid:", filledSprings)
-			return false
-		}
-	}
-	// fmt.Println("ok:", filledSprings)
-	return true
+	return CachedSpringLine{}
 }
