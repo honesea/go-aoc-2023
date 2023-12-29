@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -13,12 +12,6 @@ import (
 type SpringLine struct {
 	springs   []string
 	groupings []int
-}
-
-type CachedSpringLine struct {
-	groupings      []int
-	dmgSpringCount int
-	currentIndex   int
 }
 
 func day12() (int, int, error) {
@@ -65,8 +58,8 @@ func d12p1() (int, error) {
 
 	permutations := []int{}
 	for _, springLine := range springLines {
-		cache := make(map[string]CachedSpringLine)
-		permutations = append(permutations, countPermutations(cache, springLine, ""))
+		cache := make(map[[3]int]int)
+		permutations = append(permutations, countPermutationsDP(springLine.springs, springLine.groupings, 0, 0, 0, cache))
 	}
 
 	return sum(permutations), nil
@@ -101,10 +94,10 @@ func d12p2() (int, error) {
 	}
 
 	permutations := []int{}
-	for i, springLine := range springLines {
-		fmt.Printf("%v / %v\n", i, len(springLines))
-		cache := make(map[string]CachedSpringLine)
-		permutations = append(permutations, countPermutations(cache, springLine, ""))
+	for _, springLine := range springLines {
+		cache := make(map[[3]int]int)
+		permutations = append(permutations, countPermutationsDP(springLine.springs, springLine.groupings, 0, 0, 0, cache))
+
 	}
 
 	return sum(permutations), nil
@@ -172,74 +165,51 @@ func parseSpringLineLong(line []byte) SpringLine {
 	}
 }
 
-func countPermutations(cache map[string]CachedSpringLine, springLine SpringLine, perm string) int {
-	cachedSpringLine := getSpringLineFromCache(cache, perm)
-
-	fmt.Println(perm)
-
-	// Handle most recent addition to permutation
-	if perm != "" {
-		if perm[len(perm)-1] == '#' {
-			cachedSpringLine.dmgSpringCount++
-		} else if perm[len(perm)-1] == '.' && cachedSpringLine.dmgSpringCount > 0 {
-			cachedSpringLine.groupings = append(cachedSpringLine.groupings, cachedSpringLine.dmgSpringCount)
-			cachedSpringLine.dmgSpringCount = 0
-		}
-
-		cachedSpringLine.currentIndex++
-	}
-
-	for {
-
-		// End of string so calculate if correct and return count
-		if cachedSpringLine.currentIndex == len(springLine.springs) {
-			break
-		}
-
-		character := springLine.springs[cachedSpringLine.currentIndex]
-
-		if character == "?" {
-			cache[perm] = cachedSpringLine
-			return countPermutations(cache, springLine, perm+"#") + countPermutations(cache, springLine, perm+".")
-		} else if character == "#" {
-			cachedSpringLine.dmgSpringCount++
-		} else if character == "." && cachedSpringLine.dmgSpringCount > 0 {
-			cachedSpringLine.groupings = append(cachedSpringLine.groupings, cachedSpringLine.dmgSpringCount)
-			cachedSpringLine.dmgSpringCount = 0
-		}
-
-		cachedSpringLine.currentIndex++
-	}
-
-	if cachedSpringLine.dmgSpringCount > 0 {
-		cachedSpringLine.groupings = append(cachedSpringLine.groupings, cachedSpringLine.dmgSpringCount)
-		cachedSpringLine.dmgSpringCount = 0
-	}
-
-	if len(springLine.groupings) != len(cachedSpringLine.groupings) {
-		return 0
-	}
-
-	for i := 0; i < len(springLine.groupings); i++ {
-		if springLine.groupings[i] != cachedSpringLine.groupings[i] {
+func countPermutationsDP(springs []string, groupings []int, pos, consecutiveHash, groupIdx int, cache map[[3]int]int) int {
+	if pos == len(springs) {
+		if consecutiveHash > 0 && groupings[groupIdx] != consecutiveHash {
 			return 0
 		}
+
+		// Handle final group index increment
+		if consecutiveHash > 0 {
+			groupIdx++
+		}
+
+		if groupIdx != len(groupings) {
+			return 0
+		}
+
+		return 1
 	}
 
-	return 1
-}
-
-func getSpringLineFromCache(cache map[string]CachedSpringLine, perm string) CachedSpringLine {
-	if len(perm) == 0 {
-		return CachedSpringLine{}
+	// Check if this state has already been computed
+	state := [3]int{pos, consecutiveHash, groupIdx}
+	if val, exists := cache[state]; exists {
+		return val
 	}
 
-	cachedPerm := perm[:len(perm)-1]
+	totalPermutations := 0
+	tryBothPaths := false
 
-	groups, ok := cache[cachedPerm]
-	if ok {
-		return groups
+	if springs[pos] == "?" {
+		tryBothPaths = true
 	}
 
-	return CachedSpringLine{}
+	if tryBothPaths || springs[pos] == "." {
+		if consecutiveHash > 0 && groupings[groupIdx] == consecutiveHash {
+			totalPermutations += countPermutationsDP(springs, groupings, pos+1, 0, groupIdx+1, cache)
+		} else if consecutiveHash == 0 {
+			totalPermutations += countPermutationsDP(springs, groupings, pos+1, consecutiveHash, groupIdx, cache)
+		}
+	}
+
+	if tryBothPaths || springs[pos] == "#" {
+		if groupIdx < len(groupings) && consecutiveHash+1 <= groupings[groupIdx] {
+			totalPermutations += countPermutationsDP(springs, groupings, pos+1, consecutiveHash+1, groupIdx, cache)
+		}
+	}
+
+	cache[state] = totalPermutations
+	return totalPermutations
 }
